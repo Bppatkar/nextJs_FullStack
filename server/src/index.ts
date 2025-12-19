@@ -1,7 +1,8 @@
 import express from 'express';
 import type { Application, Request, Response } from 'express';
-import dotenv from 'dotenv';
-dotenv.config();
+// import dotenv from 'dotenv';
+// dotenv.config();
+import 'dotenv/config';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
