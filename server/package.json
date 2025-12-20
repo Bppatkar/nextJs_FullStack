@@ -9,7 +9,7 @@
     "server": "nodemon ./dist/index.js",
     "dev": "concurrently \"npm run watch\" , \"npm run server\" \"npm run watch-views\"",
     "watch": "tsc -w",
-    "build": "tsc  npm run copy-files",
+    "build": "tsc && npm run copy-files",
     "copy-files": "copyfiles -u 1 \"src/views/**/*\" dist/",
     "watch-views": "nodemon --watch src/views -e ejs -x \"npm run copy-files\""
   },
@@ -29,8 +29,10 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.1",
+    "@types/nodemailer": "^7.0.4",
     "@types/pg": "^8.15.6",
     "copyfiles": "^2.4.1",
     "nodemon": "^3.1.11",

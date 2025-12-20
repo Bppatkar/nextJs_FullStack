@@ -3,7 +3,9 @@ import type { Application, Request, Response } from 'express';
 import 'dotenv/config';
 import cors from 'cors';
 import path from 'path';
+import ejs from 'ejs';
 import { fileURLToPath } from 'url';
+import { sendEmail } from './lib/mail.js';
 const _dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Application = express();
@@ -17,8 +19,12 @@ app.use(express.urlencoded({ extended: false }));
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(_dirname, './views'));
 
-app.get('/', (req: Request, res: Response) => {
-  return res.render('welcome');
+app.get('/', async (req: Request, res: Response) => {
+  const html = await ejs.renderFile(_dirname + '/views/emails/welcome.ejs', {
+    name: 'Anurag Patkar',
+  });
+  await sendEmail('jihov40461@mucate.com', 'new one for more testing', html);
+  return res.json({ message: 'Email send successfully' });
 });
 
 app.listen(PORT, () => {

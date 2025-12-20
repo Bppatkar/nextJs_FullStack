@@ -22,6 +22,7 @@ function SignupPage() {
                 Full Name
               </Label>
               <Input
+                name="name"
                 type="text"
                 placeholder="Enter your full name"
                 id="name"
@@ -34,6 +35,7 @@ function SignupPage() {
                 Email
               </Label>
               <Input
+                name="email"
                 type="email"
                 placeholder="Enter your email"
                 id="email"
@@ -47,6 +49,7 @@ function SignupPage() {
                   Password
                 </Label>
                 <Input
+                  name="password"
                   type="password"
                   placeholder="Create password"
                   id="password"
@@ -62,6 +65,7 @@ function SignupPage() {
                   Confirm Password
                 </Label>
                 <Input
+                  name="confirm_password"
                   type="password"
                   placeholder="Confirm password"
                   id="confirmPassword"

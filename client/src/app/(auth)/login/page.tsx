@@ -19,6 +19,7 @@ function Page() {
                 Email
               </Label>
               <Input
+                name="email"
                 type="email"
                 placeholder="Enter your email"
                 id="email"
@@ -31,6 +32,7 @@ function Page() {
                 Password
               </Label>
               <Input
+                name="password"
                 type="password"
                 placeholder="Enter your password"
                 id="password"
