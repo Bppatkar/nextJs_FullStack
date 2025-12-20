@@ -21,12 +21,20 @@ app.set('views', path.resolve(_dirname, './views'));
 
 app.get('/', async (req: Request, res: Response) => {
   const html = await ejs.renderFile(_dirname + '/views/emails/welcome.ejs', {
-    name: 'Anurag Patkar',
+    name: 'Bhanu Pratap',
   });
-  await sendEmail('jihov40461@mucate.com', 'new one for more testing', html);
+  // await sendEmail('jihov40461@mucate.com', 'new one for more testing', html);
+
+  await emailQueue.add(emailQueueName, {
+    to: 'jihov40461@mucate.com',
+    subject: 'testing queue with nodemail and mailer lite',
+    html,
+  });
   return res.json({ message: 'Email send successfully' });
 });
 
+import './jobs/index.js';
+import { emailQueue, emailQueueName } from './jobs/EmailJob.js';
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
