@@ -1,0 +1,355 @@
+export const supportedMimes = [
+  'image/png',
+  'image/jpg',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+];
+import { ZodError } from 'zod';
+import { supportedMimes } from './lib/filesystem.js';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import ejs from 'ejs';
+import { fileURLToPath } from 'url';
+import * as path from 'path';
+import moment from 'moment';
+
+export const formatError = (error: ZodError): Record<string, string> => {
+  const errors: Record<string, string> = {};
+  if ('issues' in error) {
+    // Zod v3+
+    error.issues.forEach((issue) => {
+      const field = issue.path[0] as string | undefined;
+      if (field) {
+        errors[field] = issue.message;
+      }
+    });
+  } else if ('errors' in error) {
+    // Zod v2
+    (error as any).errors?.forEach((err: any) => {
+      const field = err.path?.[0];
+      if (field) {
+        errors[field] = err.message;
+      }
+    });
+  }
+
+  return errors;
+};
+
+export const imageValidator = (size: number, mime: string): string | null => {
+  if (bytesToMb(size) > 2) {
+    return 'Image size must be less than 2 MB';
+  } else if (!supportedMimes.includes(mime)) {
+    return 'Image must be type of png, jpg, jpeg,svg, webp,gif..';
+  }
+  return null;
+};
+
+export const bytesToMb = (bytes: number) => {
+  return bytes / (1024 * 1024);
+};
+
+export const generateRandomNum = () => {
+  return uuidv4();
+};
+
+export const removeImage = (imageName: string): boolean => {
+  const imagePath = path.join(process.cwd(), 'public', 'images', imageName);
+
+  if (fs.existsSync(imagePath))
+    try {
+      fs.unlinkSync(imagePath);
+      return true;
+    } catch (error) {
+      console.error('Error removing image:', error);
+      return false;
+    }
+
+  return false;
+};
+
+export const getImageUrl = (imageName: string): string => {
+  return `images/${imageName}`;
+};
+
+export const processUploadedFile = (file: Express.Multer.File) => {
+  return {
+    filename: file.filename,
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+    path: file.path,
+    url: getImageUrl(file.filename),
+  };
+};
+
+
+export const uploadImage = async (
+  file: Express.Multer.File
+): Promise<string> => {
+  const error = imageValidator(file.size, file.mimetype);
+  if (error) {
+    throw new Error(error);
+  }
+
+  const ext = path.extname(file.originalname);
+  const filename = `${generateRandomNum()}${ext}`;
+  const uploadPath = path.join(process.cwd(), 'public', 'images', filename);
+
+  await fs.promises.writeFile(uploadPath, file.buffer);
+  return filename;
+};
+
+export const renderEmailEjs = async (fileName: string, payload: any) => {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const html = await ejs.renderFile(
+    path.join(__dirname, 'views', 'emails', `${fileName}.ejs`),
+    payload
+  );
+  return html;
+};
+
+export const checkDateHourDifference = (date: Date | string): number => {
+  const now = moment();
+  const tokenSentAt = moment(date);
+  const difference = moment.duration(now.diff(tokenSentAt));
+  return difference.asHours();
+};
+
+
+src/custom-types.d.ts
+interface AuthUser {
+  id: number;
+  name: string;
+  email: string;
+  google_id: string;
+  image?: string;
+}
+
+declare namespace Express {
+  export interface Request {
+    user?: AuthUser;
+  }
+}
+
+src/lib/multer.ts
+import multer from 'multer';
+import path from 'path';
+import { generateRandomNum } from '../helper.js';
+import { Request } from 'express';
+import { supportedMimes } from './filesystem.js';
+
+const storage = multer.diskStorage({
+  destination: (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void
+  ) => {
+    const uploadPath = path.join(process.cwd(), 'public', 'images');
+    cb(null, uploadPath);
+  },
+  filename: (
+    req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void
+  ) => {
+    const uniqueName = generateRandomNum();
+    const ext = path.extname(file.originalname);
+    cb(null, ` ${uniqueName}${ext}`);
+  },
+});
+
+const fileFilter = (
+  req: Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  const allowedMimes = supportedMimes;
+
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invaild file type. only images are allowed'));
+  }
+};
+
+export const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB limit
+    files: 10, // max 10 files
+  },
+});
+
+export const singleUpload = upload.single('image');
+export const multipleUpload = upload.array('images', 10);
+export const fieldsUpload = upload.fields([
+  { name: 'avatar', maxCount: 1 },
+  { name: 'gallery', maxCount: 10 },
+]);
+
+
+src/lib/prisma.ts
+import dotenv from 'dotenv';
+dotenv.config();
+
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../generated/prisma/client';
+
+const connectionString = `${process.env.DATABASE_URL}` as string;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL is not set in .env file');
+}
+
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({
+  log: ['query', 'error'],
+  errorFormat: 'pretty',
+  adapter,
+});
+
+prisma
+  .$connect()
+  .then(() => console.log('✅ Database connected'))
+  .catch((err: any) =>
+    console.error('❌ Database connection failed:', err.message)
+  );
+
+export default prisma;
+Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../generated/prisma/client.js'?
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+
+
+
+src/routes/verifyRoutes.ts
+import { Router, Request, Response } from 'express';
+import prisma from '../lib/prisma.js';
+
+const router = Router();
+
+// * Verify email
+router.get('/verify/email', async (req: Request, res: Response) => {
+  const { email, token } = req.query;
+  if (email && token) {
+    const user = await prisma.user.findUnique({
+      select: {
+        email_verify_token: true,
+        id: true,
+      },
+      where: { email: email as string },
+    });
+    if (user) {
+      // * Check both token
+      if (token !== user.email_verify_token) {
+        return res.redirect('/verify/error');
+      }
+      await prisma.user.update({
+        data: {
+          email_verified_at: new Date().toISOString(),
+          email_verify_token: null,
+        },
+        where: {
+          id: user.id,
+        },
+      });
+      return res.redirect(`${process.env.CLIENT_URL}/login`);
+    }
+    return res.redirect('/verify/error');
+  }
+});
+
+// * Verify error page
+router.get('/verify/error', (req: Request, res: Response) => {
+  return res.render('auth/verifyEmailError');
+});
+
+export default router;
+src/routes/index.ts
+import { Router } from 'express';
+import AuthRoutes from './authRoutes.js';
+import ClashRoutes from './clashRoutes.js';
+import VerifyRoutes from './verifyRoutes.js';
+
+const router = Router();
+
+router.use('/api', AuthRoutes);
+router.use('/api/clash', ClashRoutes);
+router.use('/', VerifyRoutes);
+
+export default router;
+
+
+
+
+
+
+
+
+src/routes/authRoutes.ts
+src/routes/clashRoutes.ts
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import rateLimit from 'express-rate-limit';
+
+export const limiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 100,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
+
+export const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+});
+
+import winston, { format } from 'winston';
+
+const { combine, timestamp, json } = format;
+const logger = winston.createLogger({
+  level: 'error',
+  format: combine(timestamp(), json()),
+  transports: [new winston.transports.File({ filename: 'logs.log' })],
+});
+
+export default logger;
+
+

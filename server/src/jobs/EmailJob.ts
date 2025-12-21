@@ -7,7 +7,7 @@ export const emailQueueName = 'emailQueue';
 interface EmailJobDataType {
   to: string;
   subject: string;
-  body: string;
+   html: string;
 }
 
 export const emailQueue = new Queue(emailQueueName, {
@@ -19,7 +19,7 @@ export const queueWorker = new Worker(
   emailQueueName,
   async (job: Job) => {
     const data: EmailJobDataType = job.data;
-    await sendEmail(data.to, data.subject, data.subject);
+    await sendEmail(data.to, data.subject, data.html);
   },
   { connection: redisConnection }
 );

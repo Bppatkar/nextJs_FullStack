@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
   <%- include("../partials/head") %>
+
   <body>
     <div class="container">
-      <p>Hello <strong><%= name %></strong></p>
-      <p>
-        We are happy to on board you. We can't wait to see what clash you will
-        perorm.
-      </p>
+      <p>Hello <strong> <%= name %> </strong></p>
+      <p>Please click on below link to verify your email.</p>
+      <a href="<%= url %>" target="_blank"
+        >Click on here to verify your email</a
+      >
       <p>If you have any query then let us know. we are here to help you</p>
       <%- include('../partials/footer'); %>
     </div>

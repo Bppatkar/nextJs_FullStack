@@ -18,11 +18,24 @@ export const sendEmail = async (
     const fromEmail = process.env.FROM_EMAIL;
     const fromName = process.env.FROM_NAME || 'Your App';
 
+    console.log('📤 Sending email to:', to);
+    console.log('📤 Using FROM:', `${fromName} <${fromEmail}>`);
+
+    if (!html) {
+      console.error('❌ HTML content is undefined or empty');
+      throw new Error('HTML content is required for email');
+    }
+    const text = html
+      .replace(/<[^>]*>/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
     const info = await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       to: to,
       subject: subject,
       html: html,
+      text: text,
     });
 
     console.log('✅ Email sent successfully!');

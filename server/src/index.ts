@@ -6,6 +6,7 @@ import path from 'path';
 import ejs from 'ejs';
 import { fileURLToPath } from 'url';
 import { sendEmail } from './lib/mail.js';
+import Routes from './routes/index.js';
 const _dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Application = express();
@@ -19,16 +20,18 @@ app.use(express.urlencoded({ extended: false }));
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(_dirname, './views'));
 
+app.use(Routes);
+
 app.get('/', async (req: Request, res: Response) => {
   const html = await ejs.renderFile(_dirname + '/views/emails/welcome.ejs', {
-    name: 'Bhanu Pratap',
+    name: 'Anurag Patkar',
   });
   // await sendEmail('jihov40461@mucate.com', 'new one for more testing', html);
 
   await emailQueue.add(emailQueueName, {
     to: 'jihov40461@mucate.com',
-    subject: 'testing queue with nodemail and mailer lite',
-    html,
+    subject: 'checking with redis',
+    html: html,
   });
   return res.json({ message: 'Email send successfully' });
 });
