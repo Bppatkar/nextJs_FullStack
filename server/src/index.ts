@@ -24,13 +24,13 @@ app.use(Routes);
 
 app.get('/', async (req: Request, res: Response) => {
   const html = await ejs.renderFile(_dirname + '/views/emails/welcome.ejs', {
-    name: 'Anurag Patkar',
+    name: 'new one',
   });
   // await sendEmail('jihov40461@mucate.com', 'new one for more testing', html);
 
   await emailQueue.add(emailQueueName, {
     to: 'jihov40461@mucate.com',
-    subject: 'checking with redis',
+    subject: 'checking with redis and typescript',
     html: html,
   });
   return res.json({ message: 'Email send successfully' });

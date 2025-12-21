@@ -51,7 +51,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     await emailQueue.add(emailQueueName, {
       to: payload.email,
       subject: 'Please verify your email Clash',
-      body: html,
+      html: html,
     });
 
     await prisma.user.create({
