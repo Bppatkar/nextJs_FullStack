@@ -7,7 +7,7 @@ export const emailQueueName = 'emailQueue';
 interface EmailJobDataType {
   to: string;
   subject: string;
-   html: string;
+  html: string;
 }
 
 export const emailQueue = new Queue(emailQueueName, {

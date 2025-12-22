@@ -37,7 +37,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
 
     const id = generateRandomNum();
     const token = await bcrypt.hash(id, salt);
-    const url = `${process.env.APP_URL}/verify/email/?email=${payload.email}&token=${token}`;
+    const url = `${process.env.APP_URL}/verify-email/?email=${payload.email}&token=${token}`;
     console.log('🔗 Verification URL:', url);
 
     const html = await renderEmailEjs('verify-email', {
@@ -45,12 +45,9 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
       url: url,
     });
 
-    console.log('📧 Generated HTML length:', html.length);
-    console.log('📧 HTML preview (first 200 chars):', html.substring(0, 200));
-
     await emailQueue.add(emailQueueName, {
       to: payload.email,
-      subject: 'Please verify your email Clash',
+      subject: 'Clash email verification',
       html: html,
     });
 
@@ -62,8 +59,12 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
         email_verify_token: token,
       },
     });
-    return res.status(200).json({
-      message: 'User Registered Successfully',
+    // return res.status(200).json({
+    //   message: 'User Registered Successfully',
+    // });
+    res.status(200).json({
+      message:
+        'Please verify your email. we have send you a verification email !',
     });
   } catch (error) {
     console.log('The error is:', error);
