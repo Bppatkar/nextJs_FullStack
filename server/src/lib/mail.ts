@@ -1,12 +1,75 @@
 import nodemailer from 'nodemailer';
-export const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.mailersend.net',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
+
+let transporter: nodemailer.Transporter | null = null;
+
+export async function initializeTransporter() {
+  let nodeEnv = process.env.NODE_ENV || 'development';
+  nodeEnv = nodeEnv.replace(/^===?\s*['"]?|['"]$/g, '').trim();
+  
+  console.log('📧 NODE_ENV cleaned:', nodeEnv);
+  
+  if (nodeEnv === 'development') {
+    console.log('📧 Initializing development email transporter...');
+
+    // Create test account for development
+
+    const testAccount = await nodemailer.createTestAccount();
+    console.log('📧 Ethereal Test Account:', testAccount.user);
+
+    transporter = nodemailer.createTransport({
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+    try {
+      await transporter.verify();
+      console.log('✅ Ethereal Email transporter verified successfully');
+    } catch (error) {
+      console.error('❌ Failed to verify Ethereal Email transporter:', error);
+    }
+  } else {
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+
+    if (!smtpUser || !smtpPass) {
+      throw new Error('SMTP credentials are required for production');
+    }
+
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.mailersend.net',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
+  }
+  return transporter;
+}
+
+let initPromise: Promise<nodemailer.Transporter> | null = null;
+
+async function getTransporter(): Promise<nodemailer.Transporter> {
+  if (transporter) {
+    return transporter;
+  }
+
+  if (!initPromise) {
+    initPromise = initializeTransporter();
+  }
+
+  transporter = await initPromise;
+  return transporter;
+}
+
+// Call initialize on startup
+getTransporter().catch((error) => {
+  console.error('Failed to initialize email transporter:', error);
 });
 
 export const sendEmail = async (
@@ -15,13 +78,14 @@ export const sendEmail = async (
   html: string
 ): Promise<void> => {
   try {
+    const emailTransporter = await getTransporter();
     const fromEmail = process.env.FROM_EMAIL;
     const fromName = process.env.FROM_NAME || 'Your App';
 
     console.log('📤 Sending email to:', to);
     console.log('📤 Using FROM:', `${fromName} <${fromEmail}>`);
 
-    if (!html) {
+    if (!html || html.trim().length === 0) {
       console.error('❌ HTML content is undefined or empty');
       throw new Error('HTML content is required for email');
     }
@@ -30,7 +94,7 @@ export const sendEmail = async (
       .replace(/\s+/g, ' ')
       .trim();
 
-    const info = await transporter.sendMail({
+    const info = await emailTransporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       to: to,
       subject: subject,
@@ -41,6 +105,14 @@ export const sendEmail = async (
     console.log('✅ Email sent successfully!');
     console.log('📨 Message ID:', info.messageId);
     console.log('📊 Response:', info.response);
+
+    if (process.env.NODE_ENV === 'development') {
+      const previewUrl = nodemailer.getTestMessageUrl(info);
+      console.log('📧 Preview URL:', previewUrl);
+      console.log('👉 Open this URL in browser to view the email');
+    } else {
+      console.log('📊 Response:', info.response);
+    }
   } catch (error: any) {
     console.error('❌ MailerSend error:', error.message);
 
