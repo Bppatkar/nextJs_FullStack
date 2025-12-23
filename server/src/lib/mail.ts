@@ -5,9 +5,9 @@ let transporter: nodemailer.Transporter | null = null;
 export async function initializeTransporter() {
   let nodeEnv = process.env.NODE_ENV || 'development';
   nodeEnv = nodeEnv.replace(/^===?\s*['"]?|['"]$/g, '').trim();
-  
+
   console.log('📧 NODE_ENV cleaned:', nodeEnv);
-  
+
   if (nodeEnv === 'development') {
     console.log('📧 Initializing development email transporter...');
 
@@ -28,10 +28,14 @@ export async function initializeTransporter() {
     try {
       await transporter.verify();
       console.log('✅ Ethereal Email transporter verified successfully');
+      console.log(
+        '📧 All emails will be sent to Ethereal (no real emails in dev)'
+      );
     } catch (error) {
       console.error('❌ Failed to verify Ethereal Email transporter:', error);
     }
   } else {
+    console.log('📧 Initializing production email transporter (MailerSend)...');
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
 
@@ -48,6 +52,12 @@ export async function initializeTransporter() {
         pass: smtpPass,
       },
     });
+    try {
+      await transporter.verify();
+      console.log('✅ MailerSend Email transporter verified successfully');
+    } catch (error) {
+      console.error('❌ Failed to verify MailerSend transporter:', error);
+    }
   }
   return transporter;
 }

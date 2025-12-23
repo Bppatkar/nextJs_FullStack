@@ -37,7 +37,7 @@ app.get('/', async (req: Request, res: Response) => {
   // await sendEmail('jihov40461@mucate.com', 'new one for more testing', html);
 
   await emailQueue.add(emailQueueName, {
-    to: 'tofevev207@mekuron.com',
+    to: 'giyofap914@mekuron.com',
     subject: 'checking with redis and typescript',
     html: html,
   });
