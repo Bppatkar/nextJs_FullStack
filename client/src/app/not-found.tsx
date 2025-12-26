@@ -4,7 +4,6 @@ export default function NotFound() {
   return (
     <div className="w-full min-h-screen bg-linear-to-br from-pink-50 via-purple-50 to-blue-50 flex flex-col justify-center items-center p-6">
       <div className="max-w-2xl w-full text-center space-y-8">
-        
         <h1 className="text-9xl font-black bg-linear-to-r from-pink-400 via-purple-500 to-indigo-600 text-transparent bg-clip-text">
           404
         </h1>
@@ -17,7 +16,6 @@ export default function NotFound() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-           
             <Link
               href="/"
               className="px-8 py-4 bg-linear-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 text-center"
@@ -25,12 +23,12 @@ export default function NotFound() {
               Go Home
             </Link>
 
-            <a
+            <Link
               href="/"
               className="px-8 py-4 border border-purple-300 text-purple-600 hover:bg-purple-50 font-semibold rounded-lg text-center"
             >
               Go Back
-            </a>
+            </Link>
           </div>
 
           <div className="pt-10">

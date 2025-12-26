@@ -1,13 +1,8 @@
-// export { default } from 'next-auth/middleware';
-
-// export const config = { matcher: ['/dashboard', '/clash/items/:path*'] };
-
-// src/proxy.ts
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
-const proxy = withAuth(
-  function proxy(request) {
+export default withAuth(
+  function proxy() {
     return NextResponse.next();
   },
   {
@@ -19,8 +14,6 @@ const proxy = withAuth(
     },
   }
 );
-
-export default proxy;
 
 export const config = {
   matcher: ['/dashboard/:path*', '/clash/items/:path*'],
