@@ -48,8 +48,9 @@ export const upload = multer({
 });
 
 export const singleUpload = upload.single('image');
-export const multipleUpload = upload.array('images', 10);
+export const multipleUpload = upload.array('images');
+export const clashItemsUpload = upload.array('images[]'); 
 export const fieldsUpload = upload.fields([
-  { name: 'avatar', maxCount: 1 },
+  { name: 'image', maxCount: 1 },
   { name: 'gallery', maxCount: 10 },
 ]);

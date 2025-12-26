@@ -22,7 +22,7 @@ const app: Application = express();
 const server: HttpServer = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || '*', // Added fallback
+    origin: process.env.CLIENT_URL || '*',
   },
 });
 

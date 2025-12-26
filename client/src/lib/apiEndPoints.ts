@@ -11,5 +11,5 @@ export const FORGOT_PASSWORD_URL = BACKEND_URL + '/auth/forget-password';
 export const RESET_PASSWORD_URL = BACKEND_URL + '/auth/reset-password';
 
 //  Clash URL
-export const CLASH_URL = BACKEND_URL + '/clash/clash';
-export const CLASH_ITEMS_URL = BACKEND_URL + '/clash/clash/items';
+export const CLASH_URL = BACKEND_URL + '/clash';
+export const CLASH_ITEMS_URL = BACKEND_URL + '/clash/items';

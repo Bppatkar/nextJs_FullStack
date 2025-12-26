@@ -75,12 +75,7 @@ export const uploadImage = async (
     throw new Error(error);
   }
 
-  const ext = path.extname(file.originalname);
-  const filename = `${generateRandomNum()}${ext}`;
-  const uploadPath = path.join(process.cwd(), 'public', 'images', filename);
-
-  await fs.promises.writeFile(uploadPath, file.buffer);
-  return filename;
+  return file.filename.trim();
 };
 
 export const renderEmailEjs = async (fileName: string, payload: any) => {
@@ -108,7 +103,11 @@ export const renderEmailEjs = async (fileName: string, payload: any) => {
   return html;
 };
 
-export const checkDateHourDifference = (date: Date | string): number => {
+export const checkDateHourDifference = (date: Date | string | null): number => {
+  if (!date) {
+    return Infinity;
+  }
+
   const now = moment();
   const tokenSentAt = moment(date);
   const difference = moment.duration(now.diff(tokenSentAt));

@@ -1,5 +1,5 @@
-"use client";
-import React, { Dispatch, SetStateAction } from "react";
+'use client';
+import React, { Dispatch, SetStateAction } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,8 +9,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { signOut } from "next-auth/react";
+} from '@/components/ui/alert-dialog';
+import { signOut } from 'next-auth/react';
 
 export default function LogoutModal({
   open,
@@ -19,8 +19,16 @@ export default function LogoutModal({
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }) {
-  const handleLogout = () => {
-    signOut({ redirect: true, callbackUrl: "/login" });
+  const handleLogout = async () => {
+    try {
+      await signOut({
+        redirect: true,
+        callbackUrl: '/login',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      setOpen(false);
+    }
   };
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
