@@ -19,6 +19,7 @@ import {
 import { emailQueue, emailQueueName } from '../jobs/EmailJob.js';
 import authMiddleware from '../middleware/AuthMiddleware.js';
 import { testQueue, testQueueName } from '../jobs/TestQueue.js';
+import { sendEmail } from '../lib/mail.js';
 
 const router = Router();
 
@@ -40,37 +41,69 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     const salt = await bcrypt.genSalt(10);
     payload.password = await bcrypt.hash(payload.password, salt);
 
-    const id = generateRandomNum();
-    const token = await bcrypt.hash(id, salt);
-    const url = `${process.env.APP_URL}/verify-email/?email=${payload.email}&token=${token}`;
-    console.log('🔗 Verification URL:', url);
+    // Check if we should skip email verification
+    const skipEmailVerification =
+      process.env.SKIP_EMAIL_VERIFICATION === 'true' ||
+      process.env.NODE_ENV === 'development';
 
-    const html = await renderEmailEjs('verify-email', {
-      name: payload.name,
-      url: url,
-    });
+    if (skipEmailVerification) {
+      await prisma.user.create({
+        data: {
+          name: payload.name,
+          email: payload.email,
+          password: payload.password,
+          email_verified_at: new Date(),
+          email_verify_token: null,
+        },
+      });
 
-    await emailQueue.add(emailQueueName, {
-      to: payload.email,
-      subject: 'Clash email verification',
-      html: html,
-    });
+      return res.status(200).json({
+        message: 'Account created successfully! You can now login.',
+      });
+    } else {
+      console.log('🔗 Generating verification token...');
+      const id = generateRandomNum();
+      const salt = await bcrypt.genSalt(10);
+      const token = await bcrypt.hash(id, salt);
+      // const url = `${process.env.APP_URL}/verify-email/?email=${payload.email}&token=${token}`;
+      const url = `${
+        process.env.APP_URL || 'http://localhost:8000'
+      }/verify-email/?email=${encodeURIComponent(
+        payload.email
+      )}&token=${encodeURIComponent(token)}`;
+      console.log('🔗 Verification URL:', url);
 
-    await prisma.user.create({
-      data: {
+      console.log('📧 Rendering email template...');
+      const html = await renderEmailEjs('verify-email', {
         name: payload.name,
-        email: payload.email,
-        password: payload.password,
-        email_verify_token: token,
-      },
-    });
+        url: url,
+      });
+      console.log('📤 Sending verification email to:', payload.email);
+      try {
+        await sendEmail(payload.email, 'Clash email verification', html);
+        console.log('✅ Email sent (or attempted)');
+      } catch (emailError) {
+        console.error('❌ Email sending error:', emailError);
+      }
+
+      await prisma.user.create({
+        data: {
+          name: payload.name,
+          email: payload.email,
+          password: payload.password,
+          email_verify_token: token,
+        },
+      });
+      console.log('✅ User created');
+
+      res.status(200).json({
+        message:
+          'Please verify your email. we have send you a verification email !',
+      });
+    }
     // return res.status(200).json({
     //   message: 'User Registered Successfully',
     // });
-    res.status(200).json({
-      message:
-        'Please verify your email. we have send you a verification email !',
-    });
   } catch (error) {
     console.log('The error is:', error);
 
