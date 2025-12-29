@@ -1,7 +1,8 @@
-import multer from 'multer';
+import fs from 'fs';
 import path from 'path';
-import { generateRandomNum } from '../helper.js';
+import multer from 'multer';
 import { Request } from 'express';
+import { generateRandomNum } from '../helper.js';
 import { supportedMimes } from './filesystem.js';
 
 const storage = multer.diskStorage({
@@ -11,6 +12,11 @@ const storage = multer.diskStorage({
     cb: (error: Error | null, destination: string) => void
   ) => {
     const uploadPath = path.join(process.cwd(), 'public', 'images');
+
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+
     cb(null, uploadPath);
   },
   filename: (
@@ -20,7 +26,7 @@ const storage = multer.diskStorage({
   ) => {
     const uniqueName = generateRandomNum();
     const ext = path.extname(file.originalname);
-    cb(null, ` ${uniqueName}${ext}`);
+    cb(null, `${uniqueName}${ext}`);
   },
 });
 
@@ -49,7 +55,7 @@ export const upload = multer({
 
 export const singleUpload = upload.single('image');
 export const multipleUpload = upload.array('images');
-export const clashItemsUpload = upload.array('images[]'); 
+export const clashItemsUpload = upload.array('images[]');
 export const fieldsUpload = upload.fields([
   { name: 'image', maxCount: 1 },
   { name: 'gallery', maxCount: 10 },

@@ -7,7 +7,16 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const getImageUrl = (img: string): string => {
-  return `${Env.BACKEND_URL}/images/${img}`;
+  if (img.startsWith('http://') || img.startsWith('https://')) {
+    return img;
+  }
+
+  let cleanPath = img;
+  if (img.startsWith('/images/')) {
+    cleanPath = img.replace('/images/', '');
+  }
+
+  return `${Env.BACKEND_URL}/images/${cleanPath}`;
 };
 
 export const checkDateExpiry = (date: string): boolean => {

@@ -139,22 +139,23 @@ import nodemailer from 'nodemailer';
 let transporter: nodemailer.Transporter | null = null;
 
 export async function initializeTransporter() {
-  console.log('📧 Initializing MailerSend email transporter...');
+  console.log('📧 Initializing email transporter...');
 
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
 
   if (!smtpUser || !smtpPass) {
-    console.error('❌ SMTP credentials are missing!');
-    console.error(
-      '❌ Please set SMTP_USER and SMTP_PASS environment variables'
-    );
-    throw new Error('SMTP credentials are required');
+    console.log('⚠️ SMTP credentials not found. Using console transport.');
+    // Create a simple console logger
+    transporter = createConsoleTransport();
+    return transporter;
   }
+
+  console.log('📧 Using MailerSend SMTP...');
 
   transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.mailersend.net',
-    port: parseInt(process.env.SMTP_PORT || '587'),
+    port: parseInt(process.env.SMTP_PORT || '2525'),
     secure: false,
     auth: {
       user: smtpUser,
@@ -164,18 +165,23 @@ export async function initializeTransporter() {
 
   try {
     await transporter.verify();
-    console.log('✅ MailerSend Email transporter verified successfully');
+    console.log('✅ SMTP connection verified successfully');
   } catch (error: any) {
-    console.error('❌ Failed to verify MailerSend transporter:', error.message);
-    console.error('❌ Error details:', error);
-
-    // For deployment, we'll continue but warn about email issues
-    console.log(
-      '⚠️ Email sending may fail. Users will need manual verification.'
-    );
+    console.error('❌ SMTP connection failed:', error.message);
+    console.log('⚠️ Falling back to console transport');
+    transporter = createConsoleTransport();
   }
 
   return transporter;
+}
+
+function createConsoleTransport(): nodemailer.Transporter {
+  // Create a transport that logs to console
+  return nodemailer.createTransport({
+    jsonTransport: true,
+    logger: true,
+    debug: true,
+  } as any);
 }
 
 let initPromise: Promise<nodemailer.Transporter> | null = null;
@@ -189,14 +195,8 @@ async function getTransporter(): Promise<nodemailer.Transporter> {
     initPromise = initializeTransporter();
   }
 
-  transporter = await initPromise;
-  return transporter;
+  return await initPromise;
 }
-
-// Call initialize on startup
-getTransporter().catch((error) => {
-  console.error('Failed to initialize email transporter:', error);
-});
 
 export const sendEmail = async (
   to: string,
@@ -205,49 +205,38 @@ export const sendEmail = async (
 ): Promise<void> => {
   try {
     const emailTransporter = await getTransporter();
-    const fromEmail = process.env.FROM_EMAIL;
+    const fromEmail = process.env.FROM_EMAIL || 'noreply@clashapp.com';
     const fromName = process.env.FROM_NAME || 'Clash App';
 
-    console.log('📤 Attempting to send email to:', to);
-    console.log('📤 Using FROM:', `${fromName} <${fromEmail}>`);
-
-    if (!html || html.trim().length === 0) {
-      console.error('❌ HTML content is empty');
-      throw new Error('HTML content is required for email');
-    }
-
-    const text = html
-      .replace(/<[^>]*>/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
+    console.log('📤 Sending email to:', to);
+    console.log('📤 Subject:', subject);
+    console.log('📤 From:', `${fromName} <${fromEmail}>`);
 
     const info = await emailTransporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       to: to,
       subject: subject,
       html: html,
-      text: text,
+      text: html
+        .replace(/<[^>]*>/g, '')
+        .replace(/\s+/g, ' ')
+        .trim(),
     });
 
-    console.log('✅ Email sent successfully!');
-    console.log('📨 Message ID:', info.messageId);
-    console.log('📊 Response:', info.response);
-  } catch (error: any) {
-    console.error('❌ Email sending failed:', error.message);
+    console.log('✅ Email processed successfully');
 
-    // For deployment: Log the verification link so you can help users
-    if (subject.includes('verification') || subject.includes('verify')) {
-      // Extract URL from HTML for debugging
-      const urlMatch = html.match(/href="([^"]+)"/);
-      if (urlMatch && urlMatch[1]) {
-        console.log('🔗 Verification Link that would have been sent:');
-        console.log('🔗', urlMatch[1]);
-        console.log('📝 User email:', to);
-      }
+    // For console transport, log the email details
+    if (info.messageId) {
+      console.log('📨 Message ID:', info.messageId);
     }
 
-    // Don't throw - let the registration succeed even if email fails
-    console.log('⚠️ Email not sent due to:', error.message);
-    console.log('⚠️ User was created but needs manual verification');
+    // Extract and log verification URL for debugging
+    const urlMatch = html.match(/href="([^"]+)"/);
+    if (urlMatch && urlMatch[1]) {
+      console.log('🔗 Verification Link in email:', urlMatch[1]);
+    }
+  } catch (error: any) {
+    console.error('❌ Email processing error:', error.message);
+    console.log('⚠️ Continuing without email...');
   }
 };

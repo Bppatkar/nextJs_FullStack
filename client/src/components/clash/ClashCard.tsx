@@ -1,16 +1,16 @@
-import React from "react";
+import React from 'react';
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import Image from "next/image";
-import { getImageUrl } from "@/lib/utils";
-import Link from "next/link";
-import { Button } from "../ui/button";
-import ClashMenuBar from "./ClashMenuBar";
+} from '@/components/ui/card';
+import Image from 'next/image';
+import { getImageUrl } from '@/lib/utils';
+import Link from 'next/link';
+import { Button } from '../ui/button';
+import ClashMenuBar from './ClashMenuBar';
 
 export default function ClashCard({
   clash,
@@ -19,6 +19,9 @@ export default function ClashCard({
   clash: ClashType;
   token: string;
 }) {
+  const imageUrl = getImageUrl(clash.image);
+  console.log('Image URL:', imageUrl);
+  console.log('Clash image:', clash.image);
   return (
     <Card>
       <CardHeader className="flex justify-between items-center flex-row">
@@ -37,7 +40,7 @@ export default function ClashCard({
         )}
         <p>{clash?.description}</p>
         <p>
-          <strong>Expire At :-</strong>{" "}
+          <strong>Expire At :-</strong>{' '}
           {new Date(clash?.expire_at!).toDateString()}
         </p>
       </CardContent>

@@ -53,7 +53,8 @@ export const removeImage = (imageName: string): boolean => {
 };
 
 export const getImageUrl = (imageName: string): string => {
-  return `images/${imageName}`;
+  const trimmedName = imageName.trim();
+  return `/images/${trimmedName}`;
 };
 
 export const processUploadedFile = (file: Express.Multer.File) => {
@@ -78,7 +79,10 @@ export const uploadImage = async (
   return file.filename.trim();
 };
 
-export const renderEmailEjs = async (fileName: string, payload: any) => {
+export const renderEmailEjs = async (
+  fileName: string,
+  payload: any
+): Promise<string> => {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   const templatePath = path.join(
@@ -99,8 +103,13 @@ export const renderEmailEjs = async (fileName: string, payload: any) => {
       throw new Error(`Email template not found: ${fileName}.ejs`);
     }
   }
-  const html = await ejs.renderFile(templatePath, payload);
-  return html;
+  try {
+    const html: string = await ejs.renderFile(templatePath, payload);
+    return html;
+  } catch (error) {
+    console.error(`Error rendering email template ${fileName}:`, error);
+    throw new Error(`Failed to render email template: ${fileName}`);
+  }
 };
 
 export const checkDateHourDifference = (date: Date | string | null): number => {

@@ -34,24 +34,24 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     if (user) {
       return res.status(422).json({
         errors: {
-          email: 'Email already taken.please use another one.',
+          email: 'Email already taken. Please use another one.',
         },
       });
     }
+
     const salt = await bcrypt.genSalt(10);
-    payload.password = await bcrypt.hash(payload.password, salt);
+    const hashedPassword = await bcrypt.hash(payload.password, salt);
 
     // Check if we should skip email verification
     const skipEmailVerification =
-      process.env.SKIP_EMAIL_VERIFICATION === 'true' ||
-      process.env.NODE_ENV === 'development';
+      process.env.SKIP_EMAIL_VERIFICATION === 'true';
 
     if (skipEmailVerification) {
       await prisma.user.create({
         data: {
           name: payload.name,
           email: payload.email,
-          password: payload.password,
+          password: hashedPassword,
           email_verified_at: new Date(),
           email_verify_token: null,
         },
@@ -63,9 +63,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     } else {
       console.log('🔗 Generating verification token...');
       const id = generateRandomNum();
-      const salt = await bcrypt.genSalt(10);
       const token = await bcrypt.hash(id, salt);
-      // const url = `${process.env.APP_URL}/verify-email/?email=${payload.email}&token=${token}`;
       const url = `${
         process.env.APP_URL || 'http://localhost:8000'
       }/verify-email/?email=${encodeURIComponent(
@@ -74,23 +72,30 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
       console.log('🔗 Verification URL:', url);
 
       console.log('📧 Rendering email template...');
+
+      // FIX: Make sure payload.name is a string
       const html = await renderEmailEjs('verify-email', {
-        name: payload.name,
-        url: url,
+        name: String(payload.name),
+        url: String(url),
       });
+
       console.log('📤 Sending verification email to:', payload.email);
       try {
         await sendEmail(payload.email, 'Clash email verification', html);
         console.log('✅ Email sent (or attempted)');
-      } catch (emailError) {
-        console.error('❌ Email sending error:', emailError);
+      } catch (emailError: unknown) {
+        const errorMessage =
+          emailError instanceof Error
+            ? emailError.message
+            : 'Unknown email error';
+        console.error('❌ Email sending error:', errorMessage);
       }
 
       await prisma.user.create({
         data: {
           name: payload.name,
           email: payload.email,
-          password: payload.password,
+          password: hashedPassword,
           email_verify_token: token,
         },
       });
@@ -98,12 +103,9 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
 
       res.status(200).json({
         message:
-          'Please verify your email. we have send you a verification email !',
+          'Please verify your email. We have sent you a verification email!',
       });
     }
-    // return res.status(200).json({
-    //   message: 'User Registered Successfully',
-    // });
   } catch (error) {
     console.log('The error is:', error);
 
@@ -112,9 +114,10 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
       res.status(422).json({ message: 'Invalid data', errors });
     } else {
       logger.error({ type: 'Register Error', body: JSON.stringify(error) });
-      res
-        .status(500)
-        .json({ error: 'Something went wrong.please try again!', data: error });
+      res.status(500).json({
+        error: 'Something went wrong. Please try again!',
+        data: error,
+      });
     }
   }
 });
@@ -130,7 +133,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
     if (!user) {
       return res.status(422).json({
         errors: {
-          email: 'Email already taken.please use another one.',
+          email: 'Invalid email or password.',
         },
       });
     }
@@ -138,7 +141,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
       return res.status(422).json({
         errors: {
           email:
-            'Email is not verified yet.please check your email and verify your email.',
+            'Email is not verified yet. Please check your email and verify your email.',
         },
       });
     }
@@ -179,9 +182,10 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
       res.status(422).json({ message: 'Invalid data', errors });
     } else {
       logger.error({ type: 'Auth Error', body: error });
-      res
-        .status(500)
-        .json({ error: 'Something went wrong.please try again!', data: error });
+      res.status(500).json({
+        error: 'Something went wrong. Please try again!',
+        data: error,
+      });
     }
   }
 });

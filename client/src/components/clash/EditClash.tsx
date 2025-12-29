@@ -88,7 +88,7 @@ export default function AddClash({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} modal={false}>
       <DialogContent
         onInteractOutside={(e) => e.preventDefault()}
         className="xl:max-h-[95vh] overflow-y-auto"
