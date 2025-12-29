@@ -31,14 +31,10 @@ setupSocket(io);
 
 const PORT = process.env.PORT || 7000;
 
-// CORS configuration
 app.use(
   cors({
     origin: ['http://localhost:3000', process.env.CLIENT_URL || '*'],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    exposedHeaders: ['Content-Length', 'Content-Type'],
   })
 );
 
@@ -46,24 +42,19 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Static files with CORS
-app.use(
-  '/images',
-  (req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    
-    if (req.method === 'OPTIONS') {
-      return res.status(200).end();
-    }
-    next();
-  },
-  express.static(path.join(process.cwd(), 'public', 'images'))
-);
+app.use('/images', (req, res, next) => {
+  res.set({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  });
 
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  express.static(path.join(process.cwd(), 'public', 'images'))(req, res, next);
+});
 app.use(express.static('public'));
 
 // Setting View engine ejs

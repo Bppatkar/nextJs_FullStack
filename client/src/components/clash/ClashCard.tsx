@@ -1,6 +1,6 @@
 // components/clash/ClashCard.tsx
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -22,10 +22,15 @@ export default function ClashCard({
   token: string;
 }) {
   const [imageError, setImageError] = useState(false);
-  const imageUrl = clash.image ? getImageUrl(clash.image) : '';
+  const [imageUrl, setImageUrl] = useState('');
 
-  console.log('Image URL to load:', imageUrl);
-  console.log('Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
+  useEffect(() => {
+    if (clash.image) {
+      const url = getImageUrl(clash.image);
+      setImageUrl(url);
+      console.log('Generated image URL:', url);
+    }
+  }, [clash.image]);
 
   return (
     <Card>
@@ -42,6 +47,8 @@ export default function ClashCard({
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="rounded-md object-contain"
+              loading="eager"
+              unoptimized={true}
               onError={() => {
                 console.error('Image failed to load:', imageUrl);
                 setImageError(true);
