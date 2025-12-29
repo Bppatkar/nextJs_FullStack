@@ -5,6 +5,7 @@ import './globals.css';
 import { Toaster } from 'sonner';
 import ClientSessionProvider from './providers/ClientSessionProvider';
 import { cn } from '@/lib/utils';
+import Navbar from '@/components/base/Navbar';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -26,6 +27,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
   return (
     <html lang="en">
       <body
@@ -35,7 +37,8 @@ export default function RootLayout({
         )}
       >
         <ClientSessionProvider>
-          {children}
+          <Navbar />
+          <main className="container mx-auto p-4">{children}</main>
           <Toaster richColors position="top-right" />
         </ClientSessionProvider>
       </body>

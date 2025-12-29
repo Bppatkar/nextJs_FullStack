@@ -31,21 +31,46 @@ setupSocket(io);
 
 const PORT = process.env.PORT || 7000;
 
-app.use(cors());
+// CORS configuration
+app.use(
+  cors({
+    origin: ['http://localhost:3000', process.env.CLIENT_URL || '*'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Content-Length', 'Content-Type'],
+  })
+);
+
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Static files with CORS
 app.use(
   '/images',
+  (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    next();
+  },
   express.static(path.join(process.cwd(), 'public', 'images'))
 );
+
 app.use(express.static('public'));
 
-//  setting View engine ejs
+// Setting View engine ejs
 app.set('view engine', 'ejs');
 app.set('views', path.resolve(__dirname, './views'));
 
-// Initialize email transporter BEFORE routes
+// Initialize email transporter
 initializeTransporter()
   .then(() => console.log('✅ Email transporter initialized'))
   .catch((err) =>
@@ -60,7 +85,6 @@ app.get('/', async (req: Request, res: Response) => {
       name: 'new one',
     });
 
-    // Check if emailQueue is properly initialized
     if (!emailQueue) {
       throw new Error('Email queue not initialized');
     }

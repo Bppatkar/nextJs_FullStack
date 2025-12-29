@@ -1,30 +1,37 @@
-import { fetchClash } from "@/app/fetch/clashFetch";
-import Navbar from "@/components/base/Navbar";
-import Clashing from "@/components/clash/Clashing";
-import { checkDateExpiry } from "@/lib/utils";
-import { notFound } from "next/navigation";
-import React from "react";
+import {
+  authOptions,
+  CustomSession,
+} from '@/app/api/auth/[...nextauth]/options';
+import { fetchClash } from '@/app/fetch/clashFetch';
+import Navbar from '@/components/base/Navbar';
+import { getServerSession } from 'next-auth';
 
 export default async function clashItems({
   params,
 }: {
-  params: { id: number };
+  params: Promise<{ id: string }>;
 }) {
-  const clash: ClashType | null = await fetchClash(params.id);
+  const { id } = await params;
 
-  if (!clash) return notFound();
-  if (checkDateExpiry(clash.expire_at)) {
-    return notFound();
-  }
+  console.log('Clash ID from params:', id);
+  console.log('Parsed ID (to number):', parseInt(id));
+
+  const session: CustomSession | null = await getServerSession(authOptions);
+  const clash: ClashType | null = await fetchClash(parseInt(id));
+
+  console.log('Fetched clash:', clash);
   return (
     <div className="container">
       <Navbar />
-      <div className="mt-4">
-        <h1 className="text-2xl lg:text-4xl font-extrabold">{clash?.title}</h1>
-        <p className="text-lg">{clash?.description}</p>
-      </div>
-
-      <Clashing clash={clash!} />
+      {clash ? (
+        <div>
+          <h1 className="text-2xl font-bold mb-4">{clash.title}</h1>
+          <p>{clash.description}</p>
+          {/* Display clash items here */}
+        </div>
+      ) : (
+        <p>Clash not found</p>
+      )}
     </div>
   );
 }

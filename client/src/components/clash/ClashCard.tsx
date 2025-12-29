@@ -1,4 +1,6 @@
-import React from 'react';
+// components/clash/ClashCard.tsx
+'use client';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -6,11 +8,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import Image from 'next/image';
 import { getImageUrl } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '../ui/button';
 import ClashMenuBar from './ClashMenuBar';
+import Image from 'next/image';
 
 export default function ClashCard({
   clash,
@@ -19,9 +21,12 @@ export default function ClashCard({
   clash: ClashType;
   token: string;
 }) {
-  const imageUrl = getImageUrl(clash.image);
-  console.log('Image URL:', imageUrl);
-  console.log('Clash image:', clash.image);
+  const [imageError, setImageError] = useState(false);
+  const imageUrl = clash.image ? getImageUrl(clash.image) : '';
+
+  console.log('Image URL to load:', imageUrl);
+  console.log('Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
+
   return (
     <Card>
       <CardHeader className="flex justify-between items-center flex-row">
@@ -29,18 +34,30 @@ export default function ClashCard({
         <ClashMenuBar clash={clash} token={token} />
       </CardHeader>
       <CardContent className="h-[300px]">
-        {clash?.image && (
-          <Image
-            src={getImageUrl(clash.image)}
-            width={500}
-            height={500}
-            alt={clash.title}
-            className="rounded-md w-full h-[220px] object-contain"
-          />
+        {imageUrl && !imageError && (
+          <div className="relative w-full h-[220px]">
+            <Image
+              src={imageUrl}
+              alt={clash.title}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="rounded-md object-contain"
+              onError={() => {
+                console.error('Image failed to load:', imageUrl);
+                setImageError(true);
+              }}
+              onLoad={() => console.log('Image loaded successfully:', imageUrl)}
+            />
+          </div>
         )}
-        <p>{clash?.description}</p>
-        <p>
-          <strong>Expire At :-</strong>{' '}
+        {imageError && (
+          <div className="w-full h-[220px] flex items-center justify-center bg-gray-100 rounded-md">
+            <span className="text-gray-500">Image not available</span>
+          </div>
+        )}
+        <p className="mt-4">{clash?.description}</p>
+        <p className="mt-2">
+          <strong>Expire At:</strong>{' '}
           {new Date(clash?.expire_at!).toDateString()}
         </p>
       </CardContent>

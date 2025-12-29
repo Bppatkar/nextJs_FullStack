@@ -1,4 +1,4 @@
-import { Router, Response, Request } from 'express';
+import { Router, Response, Request, NextFunction } from 'express';
 
 import { ZodError } from 'zod';
 import { clashSchema } from '../validations/clashValidation.js';
@@ -8,6 +8,29 @@ import { singleUpload, clashItemsUpload } from '../lib/multer.js';
 import prisma from '../lib/prisma.js';
 import authMiddleware from '../middleware/AuthMiddleware.js';
 const router = Router();
+
+router.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`=== CLASH ROUTE HIT ===`);
+  console.log(`Time: ${new Date().toISOString()}`);
+  console.log(`Method: ${req.method}`);
+  console.log(`URL: ${req.originalUrl}`);
+  console.log(`Path: ${req.path}`);
+  console.log(
+    `Full URL: ${req.protocol}://${req.get('host')}${req.originalUrl}`
+  );
+  console.log('Params:', JSON.stringify(req.params));
+  console.log('Query:', JSON.stringify(req.query));
+
+  // Fix: Check if req.body exists before calling Object.keys
+  if (req.body && typeof req.body === 'object') {
+    console.log('Body keys:', Object.keys(req.body));
+  } else {
+    console.log('Body:', req.body);
+  }
+
+  console.log(`=======================`);
+  next();
+});
 
 router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
@@ -25,7 +48,18 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 
 router.get('/:id', async (req: Request, res: Response) => {
   try {
+    console.log('Request params:', req.params);
+    console.log('Request query:', req.query);
+
     const { id } = req.params;
+
+    console.log('ID from params:', id);
+    console.log('ID as number:', Number(id));
+
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({ error: 'Invalid ID parameter' });
+    }
+
     const clash = await prisma.clash.findUnique({
       where: { id: Number(id) },
       include: {
@@ -48,6 +82,8 @@ router.get('/:id', async (req: Request, res: Response) => {
         },
       },
     });
+
+    console.log('Found clash:', clash);
     return res.json({ message: 'Data Fetched', data: clash });
   } catch (error) {
     logger.error({ type: 'Clash get Error', body: error });
@@ -64,6 +100,11 @@ router.put(
   async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
+
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({ error: 'Invalid ID parameter' });
+      }
+
       const body = req.body;
       const payload = clashSchema.parse(body);
       if (req.file) {
@@ -151,6 +192,11 @@ router.post(
 router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({ error: 'Invalid ID parameter' });
+    }
+
     const clash = await prisma.clash.findUnique({
       select: { image: true, user_id: true },
       where: { id: Number(id) },
@@ -199,6 +245,12 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const { id } = req.body;
+
+      if (!id || isNaN(Number(id))) {
+        return res
+          .status(400)
+          .json({ error: 'Invalid ID parameter in request body' });
+      }
 
       if (!req.files || (req.files as Express.Multer.File[]).length < 2) {
         return res
