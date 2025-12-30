@@ -11,13 +11,13 @@ export default async function clashItems({
 }: {
   params: Promise<{ id: string }>;
 }) {
+
+
   const { id } = await params;
-
-  console.log('Clash ID from params:', id);
-  console.log('Parsed ID (to number):', parseInt(id));
-
+  
   const session: CustomSession | null = await getServerSession(authOptions);
   const clash: ClashType | null = await fetchClash(parseInt(id));
+
 
   console.log('Fetched clash:', clash);
   return (

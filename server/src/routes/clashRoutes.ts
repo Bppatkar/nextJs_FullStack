@@ -21,6 +21,12 @@ router.use((req: Request, res: Response, next: NextFunction) => {
   console.log('Params:', JSON.stringify(req.params));
   console.log('Query:', JSON.stringify(req.query));
 
+  if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    console.log('Body keys:', Object.keys(req.body || {}));
+  } else {
+    console.log('Body: (not logged for GET/DELETE)');
+  }
+
   // Fix: Check if req.body exists before calling Object.keys
   if (req.body && typeof req.body === 'object') {
     console.log('Body keys:', Object.keys(req.body));
@@ -83,7 +89,23 @@ router.get('/:id', async (req: Request, res: Response) => {
       },
     });
 
-    console.log('Found clash:', clash);
+    if (!clash) {
+      return res.status(404).json({ message: 'Clash not found' });
+    }
+
+    const data = {
+      id: clash.id,
+      user_id: clash.user_id,
+      title: clash.title,
+      description: clash.description,
+      image: clash.image,
+      created_at: clash.created_at,
+      expire_at: clash.expire_at,
+      ClashItem: clash.ClashItem || [],
+      ClashComments: clash.ClashComments || [],
+    };
+
+    console.log('Found clash:', data);
     return res.json({ message: 'Data Fetched', data: clash });
   } catch (error) {
     logger.error({ type: 'Clash get Error', body: error });

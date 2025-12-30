@@ -1,4 +1,3 @@
-// components/clash/ClashCard.tsx
 'use client';
 import React, { useEffect, useState } from 'react';
 import {
@@ -65,7 +64,14 @@ export default function ClashCard({
         <p className="mt-4">{clash?.description}</p>
         <p className="mt-2">
           <strong>Expire At:</strong>{' '}
-          {new Date(clash?.expire_at!).toDateString()}
+          {clash?.expire_at
+            ? new Date(clash.expire_at).toLocaleDateString('en-US', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })
+            : 'No expiry date'}
         </p>
       </CardContent>
       <CardFooter className="space-x-4">

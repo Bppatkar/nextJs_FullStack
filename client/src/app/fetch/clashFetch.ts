@@ -35,31 +35,25 @@
 //   return null;
 // }
 
-
-
-
-
 import { CLASH_URL } from '@/lib/apiEndPoints';
 
 // Fetch ALL clashes for dashboard
 export async function fetchClashs(token: string) {
   try {
     console.log(`Fetching all clashes from: ${CLASH_URL}`);
-    
-    const res = await fetch(CLASH_URL, { 
+
+    const res = await fetch(CLASH_URL, {
       cache: 'no-cache',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': token,
+        Authorization: token,
       },
     });
 
     console.log('Response status:', res.status);
-    
+
     if (!res.ok) {
-      const errorText = await res.text();
-      console.error('Fetch error response:', errorText);
-      throw new Error(`Failed to fetch data: ${res.status} ${res.statusText}`);
+      return null;
     }
 
     const response = await res.json();
@@ -71,12 +65,16 @@ export async function fetchClashs(token: string) {
   }
 }
 
-
 export async function fetchClash(id: number) {
   try {
     console.log(`Fetching single clash from: ${CLASH_URL}/${id}`);
-    
-    const res = await fetch(`${CLASH_URL}/${id}`, { 
+
+    if (!id || isNaN(id)) {
+      console.error('Invalid ID:', id);
+      return null;
+    }
+
+    const res = await fetch(`${CLASH_URL}/${id}`, {
       cache: 'no-cache',
       headers: {
         'Content-Type': 'application/json',
@@ -84,8 +82,12 @@ export async function fetchClash(id: number) {
     });
 
     console.log('Response status:', res.status);
-    
+
     if (!res.ok) {
+      if (res.status === 404) {
+        console.log('Clash not found');
+        return null;
+      }
       const errorText = await res.text();
       console.error('Fetch error response:', errorText);
       throw new Error(`Failed to fetch data: ${res.status} ${res.statusText}`);
@@ -96,6 +98,6 @@ export async function fetchClash(id: number) {
     return response.data;
   } catch (error) {
     console.error('Error in fetchClash:', error);
-    throw error;
+    return null;
   }
 }

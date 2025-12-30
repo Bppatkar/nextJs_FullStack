@@ -10,23 +10,34 @@ type ClashFormErrorType = {
   expire_at?: string;
 };
 
-type ClashType = {
+interface ClashType {
   id: number;
   user_id: number;
   title: string;
-  description?: string;
-  image?: string;
+  description: string | null;
+  image: string | null;
   created_at: string;
-  ClashItem?: Array<ClashItemType>;
-  ClashComments?: Array<ClashCommentType>;
   expire_at: string;
-};
+  ClashItem: Array<{
+    id: number;
+    image: string;
+    count: number;
+    clash_id: number;
+  }>;
+  ClashComments: Array<{
+    id: number;
+    comment: string;
+    created_at: string;
+    clash_id: number;
+  }>;
+}
 
 type ClashItemType = {
   id: number;
   image: string;
   count: number;
 };
+
 type ClashCommentType = {
   id: number;
   comment: string;
