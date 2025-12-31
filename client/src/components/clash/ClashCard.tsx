@@ -21,62 +21,66 @@ export default function ClashCard({
   token: string;
 }) {
   const [imageError, setImageError] = useState(false);
-  const [imageUrl, setImageUrl] = useState('');
+  // const [imageUrl, setImageUrl] = useState('');
 
-  useEffect(() => {
-    if (clash.image) {
-      const url = getImageUrl(clash.image);
-      setImageUrl(url);
-      console.log('Generated image URL:', url);
-    }
-  }, [clash.image]);
+  // useEffect(() => {
+  //   if (clash.image) {
+  //     const url = getImageUrl(clash.image);
+  //     setImageUrl(url);
+  //     console.log('Generated image URL:', url);
+  //   }
+  // }, [clash.image]);
+
+  const imageUrl = clash.image ? getImageUrl(clash.image) : '';
 
   return (
-    <Card>
-      <CardHeader className="flex justify-between items-center flex-row">
-        <CardTitle>{clash.title}</CardTitle>
-        <ClashMenuBar clash={clash} token={token} />
+    <Card className="overflow-hidden h-full flex flex-col">
+      <CardHeader className="flex justify-between items-center flex-row pb-3">
+        <CardTitle className="truncate flex-1">{clash.title}</CardTitle>
+        <div className="flex-shrink-0">
+          <ClashMenuBar clash={clash} token={token} />
+        </div>
       </CardHeader>
-      <CardContent className="h-[300px]">
-        {imageUrl && !imageError && (
-          <div className="relative w-full h-[220px]">
+
+      <CardContent className="flex-1 flex flex-col space-y-3">
+        {imageUrl && !imageError ? (
+          <div className="relative w-full h-[220px] rounded-md overflow-hidden bg-gray-100">
             <Image
               src={imageUrl}
               alt={clash.title}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="rounded-md object-contain"
-              loading="eager"
+              className="object-cover"
               unoptimized={true}
-              onError={() => {
-                console.error('Image failed to load:', imageUrl);
-                setImageError(true);
-              }}
+              onError={() => setImageError(true)}
               onLoad={() => console.log('Image loaded successfully:', imageUrl)}
             />
           </div>
-        )}
-        {imageError && (
-          <div className="w-full h-[220px] flex items-center justify-center bg-gray-100 rounded-md">
-            <span className="text-gray-500">Image not available</span>
+        ) : (
+          <div className="w-full h-[220px] flex items-center justify-center bg-gray-200 rounded-md">
+            <span className="text-gray-500 text-sm">Image unavailable</span>
           </div>
         )}
-        <p className="mt-4">{clash?.description}</p>
-        <p className="mt-2">
-          <strong>Expire At:</strong>{' '}
-          {clash?.expire_at
+
+        <p className="text-sm text-gray-700 line-clamp-2 flex-grow">
+          {clash.description || 'No description'}
+        </p>
+
+        {/* Expiry */}
+        <p className="text-xs text-gray-600">
+          <strong>Expires:</strong>{' '}
+          {clash.expire_at
             ? new Date(clash.expire_at).toLocaleDateString('en-US', {
-                weekday: 'short',
-                year: 'numeric',
                 month: 'short',
                 day: 'numeric',
               })
-            : 'No expiry date'}
+            : 'N/A'}
         </p>
       </CardContent>
-      <CardFooter className="space-x-4">
-        <Link href={`/clash/items/${clash.id}`}>
-          <Button>Items</Button>
+
+      <CardFooter className="pt-0">
+        <Link href={`/clash/items/${clash.id}`} className="w-full">
+          <Button className="w-full">View Items</Button>
         </Link>
       </CardFooter>
     </Card>

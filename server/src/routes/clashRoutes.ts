@@ -21,15 +21,9 @@ router.use((req: Request, res: Response, next: NextFunction) => {
   console.log('Params:', JSON.stringify(req.params));
   console.log('Query:', JSON.stringify(req.query));
 
-  if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-    console.log('Body keys:', Object.keys(req.body || {}));
-  } else {
-    console.log('Body: (not logged for GET/DELETE)');
-  }
-
-  // Fix: Check if req.body exists before calling Object.keys
-  if (req.body && typeof req.body === 'object') {
-    console.log('Body keys:', Object.keys(req.body));
+  // Check if body exists and has keys
+  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+    console.log('Body:', JSON.stringify(req.body, null, 2));
   } else {
     console.log('Body:', req.body);
   }

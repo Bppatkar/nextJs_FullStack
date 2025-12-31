@@ -11,18 +11,23 @@ export default async function clashItems({
 }: {
   params: Promise<{ id: string }>;
 }) {
-
-
   const { id } = await params;
-  
+
   const session: CustomSession | null = await getServerSession(authOptions);
   const clash: ClashType | null = await fetchClash(parseInt(id));
-
+  
+  if (!clash) {
+    return (
+      <div className="container text-center py-10">
+        <h1 className="text-2xl font-bold text-red-600">Clash not found</h1>
+      </div>
+    );
+  }
 
   console.log('Fetched clash:', clash);
   return (
     <div className="container">
-      <Navbar />
+      {session && <Navbar />}
       {clash ? (
         <div>
           <h1 className="text-2xl font-bold mb-4">{clash.title}</h1>

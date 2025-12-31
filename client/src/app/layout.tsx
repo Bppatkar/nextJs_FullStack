@@ -4,7 +4,6 @@ import './globals.css';
 import { Toaster } from 'sonner';
 import ClientSessionProvider from './providers/ClientSessionProvider';
 import { cn } from '@/lib/utils';
-import Navbar from '@/components/base/Navbar';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -26,17 +25,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
   return (
-    <html lang="en">
+      <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          'min-h-screen  font-sans antialiased bg-slate-50',
-          geistMono.variable
+          'min-h-screen font-sans antialiased bg-slate-50',
+          geistMono.variable,
+          geistSans.variable
         )}
+        suppressHydrationWarning
       >
         <ClientSessionProvider>
-          <Navbar />
           <main className="container mx-auto p-4">{children}</main>
           <Toaster richColors position="top-right" />
         </ClientSessionProvider>

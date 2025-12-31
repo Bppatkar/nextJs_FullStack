@@ -208,9 +208,17 @@ export const sendEmail = async (
     const fromEmail = process.env.FROM_EMAIL || 'noreply@clashapp.com';
     const fromName = process.env.FROM_NAME || 'Clash App';
 
-    console.log('📤 Sending email to:', to);
+    console.log('📤 [SEND EMAIL] Attempting to send email');
+    console.log('📤 To:', to);
     console.log('📤 Subject:', subject);
     console.log('📤 From:', `${fromName} <${fromEmail}>`);
+    console.log('📤 HTML length:', html?.length || 0);
+
+     if (!html || html.trim().length === 0) {
+      console.error('❌ HTML content is empty or invalid');
+      // Don't throw error, just log and return
+      return;
+    }
 
     const info = await emailTransporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
@@ -224,6 +232,10 @@ export const sendEmail = async (
     });
 
     console.log('✅ Email processed successfully');
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📨 Preview URL (if available):', nodemailer.getTestMessageUrl(info));
+    }
 
     // For console transport, log the email details
     if (info.messageId) {

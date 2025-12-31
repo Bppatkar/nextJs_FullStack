@@ -19,8 +19,6 @@
 //   matcher: ['/dashboard/:path*', '/clash/items/:path*'],
 // };
 
-
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
@@ -33,15 +31,14 @@ export async function proxy(request: NextRequest) {
   console.log('Token exists?', !!token);
 
   // Protected routes
-  const protectedRoutes = ['/dashboard', '/clash'];
+  const protectedRoutes = ['/dashboard', '/clash/items'];
 
   // Check if the route is protected
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
+  const isClashDetailPage = pathname.match(/^\/clash\/\d+$/); // /clash/1, /clash/2, etc
 
   // Redirect to login if accessing protected route without token
-  if (isProtectedRoute && !token) {
+  if (!isClashDetailPage && protectedRoutes.some(route => 
+      pathname.startsWith(route)) && !token) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     console.log('Redirecting to login');

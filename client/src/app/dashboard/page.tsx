@@ -4,6 +4,7 @@ import { fetchClashs } from '../fetch/clashFetch';
 import ClashCard from '@/components/clash/ClashCard';
 import AddClash from '@/components/clash/AddClash';
 import { getServerSession } from 'next-auth';
+import Navbar from '@/components/base/Navbar';
 
 export default async function dashboard() {
   const session: CustomSession | null = await getServerSession(authOptions);
@@ -22,6 +23,7 @@ export default async function dashboard() {
 
   return (
     <div className="container">
+      <Navbar />
       <div className="text-end mt-4">
         <AddClash user={session?.user!} />
       </div>

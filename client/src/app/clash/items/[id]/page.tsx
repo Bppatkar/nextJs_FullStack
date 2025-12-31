@@ -10,6 +10,7 @@ import { getServerSession } from 'next-auth';
 import React from 'react';
 import Image from 'next/image';
 import { getImageUrl } from '@/lib/utils';
+import Navbar from '@/components/base/Navbar';
 
 export default async function clashItems({
   params,
@@ -24,10 +25,12 @@ export default async function clashItems({
 
   if (!clash) {
     return (
-      <div className="container">
-        <div className="mt-8 text-center">
+      <div className="container py-10">
+        <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600">Clash not found</h1>
-          <p className="mt-2">The clash you're looking for doesn't exist.</p>
+          <p className="mt-2 text-gray-600">
+            The clash you're looking for doesn't exist.
+          </p>
         </div>
       </div>
     );
@@ -35,24 +38,26 @@ export default async function clashItems({
 
   const clashItems = clash.ClashItem || [];
   const clashComments = clash.ClashComments || [];
-  const hasImage = !!clash.image;
+  const imageUrl = clash.image ? getImageUrl(clash.image) : '';
 
-  
   return (
     <div className="container">
+      <Navbar />
       {/* Clash Header with Image */}
       <div className="mt-8">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Clash Image */}
           <div className="md:w-1/3">
             <div className="relative h-64 md:h-80 rounded-lg overflow-hidden bg-gray-100">
-              {hasImage ? (
+              {imageUrl ? (
                 <Image
-                  src={getImageUrl(clash.image!)}
+                  src={imageUrl}
                   alt={clash.title}
                   fill
                   className="object-cover"
                   unoptimized={true}
+                  priority={true}
+                  sizes="(max-width: 768px) 100vw, 33vw"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -61,15 +66,17 @@ export default async function clashItems({
               )}
             </div>
           </div>
-          
-          {/* Clash Info */}
+
+         {/* Info */}
           <div className="md:w-2/3">
             <h1 className="text-3xl lg:text-4xl font-extrabold mb-4">
               {clash.title}
             </h1>
-            <p className="text-lg text-gray-600 mb-6">{clash.description || 'No description'}</p>
-            
-            {/* Clash Details */}
+            <p className="text-lg text-gray-600 mb-6">
+              {clash.description || 'No description'}
+            </p>
+
+            {/* Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="text-sm text-gray-500">Created</p>
@@ -82,7 +89,7 @@ export default async function clashItems({
                   })}
                 </p>
               </div>
-              
+
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="text-sm text-gray-500">Expires</p>
                 <p className="font-medium">
@@ -97,58 +104,61 @@ export default async function clashItems({
                 </p>
               </div>
             </div>
-            
-            {/* Clash Items Count */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${clashItems.length > 0 ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                <p className="font-medium">
-                  {clashItems.length} {clashItems.length === 1 ? 'item' : 'items'} added
-                </p>
-              </div>
+
+            {/* Items Count */}
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  clashItems.length > 0 ? 'bg-green-500' : 'bg-yellow-500'
+                }`}
+              />
+              <p className="font-medium">
+                {clashItems.length} {clashItems.length === 1 ? 'item' : 'items'}{' '}
+                added
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Add or View Items */}
-      <div className="mt-12">
-        <div className="border-t pt-8">
-          <h2 className="text-2xl font-bold mb-6">Clash Items</h2>
-          
-          {clashItems.length > 0 ? (
-            <ViewClashItems clash={clash} />
-          ) : (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-              <h3 className="text-xl font-semibold text-blue-800 mb-2">
-                No items added yet
-              </h3>
-              <p className="text-blue-700 mb-4">
-                Add at least 2 images to start your clash!
-              </p>
-              <AddClashItems token={session?.user?.token!} clashId={id} />
-            </div>
-          )}
-          
-          {/* Comments Section */}
-          <div className="mt-12">
-            <h3 className="text-xl font-bold mb-4">Comments</h3>
-            {clashComments.length > 0 ? (
-              <div className="space-y-4">
-                {clashComments.map((comment) => (
-                  <div key={comment.id} className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-700">{comment.comment}</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      {new Date(comment.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 italic">No comments yet. Be the first to comment!</p>
-            )}
+      {/* Items Section */}
+      <div className="mt-12 border-t pt-8">
+        <h2 className="text-2xl font-bold mb-6">Clash Items</h2>
+
+        {clashItems.length > 0 ? (
+          <ViewClashItems clash={clash} />
+        ) : (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <h3 className="text-xl font-semibold text-blue-800 mb-2">
+              No items added yet
+            </h3>
+            <p className="text-blue-700 mb-4">
+              Add at least 2 images to start your clash!
+            </p>
+            <AddClashItems token={session?.user?.token!} clashId={id} />
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* Comments Section */}
+      <div className="mt-12 border-t pt-8">
+        <h3 className="text-xl font-bold mb-4">Comments</h3>
+        {clashComments.length > 0 ? (
+          <div className="space-y-4">
+            {clashComments.map((comment) => (
+              <div key={comment.id} className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-gray-700">{comment.comment}</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  {new Date(comment.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 italic">
+            No comments yet. Be the first to comment!
+          </p>
+        )}
       </div>
     </div>
   );

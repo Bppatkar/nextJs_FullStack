@@ -6,6 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const getImageUrl = (img: string): string => {
+  if (!img || img.trim() === '') {
+    return '';
+  }
+
   if (img.startsWith('http')) {
     return img;
   }
@@ -13,8 +17,9 @@ export const getImageUrl = (img: string): string => {
   const backendUrl =
     process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
-  // return `${backendUrl}/images/${img}`;
-  return `/api/images/${img}`;
+  return `${backendUrl}/images/${img}`;
+
+  // return `/api/images/${img}`;
 };
 
 export const checkDateExpiry = (date: string): boolean => {
