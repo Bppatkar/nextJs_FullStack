@@ -1,5 +1,4 @@
 import { Router, Response, Request, NextFunction } from 'express';
-
 import { ZodError } from 'zod';
 import { clashSchema } from '../validations/clashValidation.js';
 import { formatError, imageValidator, removeImage } from '../helper.js';
@@ -7,6 +6,7 @@ import logger from '../lib/logger.js';
 import { singleUpload, clashItemsUpload } from '../lib/multer.js';
 import prisma from '../lib/prisma.js';
 import authMiddleware from '../middleware/AuthMiddleware.js';
+
 const router = Router();
 
 router.use((req: Request, res: Response, next: NextFunction) => {
@@ -21,8 +21,11 @@ router.use((req: Request, res: Response, next: NextFunction) => {
   console.log('Params:', JSON.stringify(req.params));
   console.log('Query:', JSON.stringify(req.query));
 
-  // Check if body exists and has keys
-  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+  if (
+    req.body &&
+    typeof req.body === 'object' &&
+    Object.keys(req.body).length > 0
+  ) {
     console.log('Body:', JSON.stringify(req.body, null, 2));
   } else {
     console.log('Body:', req.body);
@@ -36,6 +39,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
   try {
     const clashs = await prisma.clash.findMany({
       where: { user_id: req.user?.id },
+      orderBy: { created_at: 'desc' },
     });
     return res.json({ message: 'Data Fetched', data: clashs });
   } catch (error) {
@@ -48,13 +52,7 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    console.log('Request params:', req.params);
-    console.log('Request query:', req.query);
-
     const { id } = req.params;
-
-    console.log('ID from params:', id);
-    console.log('ID as number:', Number(id));
 
     if (!id || isNaN(Number(id))) {
       return res.status(400).json({ error: 'Invalid ID parameter' });
@@ -121,8 +119,23 @@ router.put(
         return res.status(400).json({ error: 'Invalid ID parameter' });
       }
 
+      // Verify ownership
+      const clash = await prisma.clash.findUnique({
+        select: { id: true, user_id: true, image: true },
+        where: { id: Number(id) },
+      });
+
+      if (!clash) {
+        return res.status(404).json({ message: 'Clash not found' });
+      }
+
+      if (clash.user_id !== req.user?.id) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
       const body = req.body;
       const payload = clashSchema.parse(body);
+
       if (req.file) {
         const image = req.file;
         const validMsg = imageValidator(image?.size, image?.mimetype);
@@ -130,27 +143,24 @@ router.put(
           return res.status(422).json({ errors: { image: validMsg } });
         }
 
-        // * Delete Old Image
-        const clash = await prisma.clash.findUnique({
-          select: { id: true, image: true },
-          where: { id: Number(id) },
-        });
-        if (clash?.image) removeImage(clash.image);
+        if (clash.image) removeImage(clash.image);
         payload.image = req.file.filename.trim();
       }
+
       await prisma.clash.update({
         data: payload,
         where: { id: Number(id) },
       });
+
       return res.json({ message: 'Clash updated successfully!' });
     } catch (error) {
       if (error instanceof ZodError) {
         const errors = formatError(error);
         res.status(422).json({ message: 'Invalid data', errors });
       } else {
-        logger.error({ type: 'Clash Post Error', body: error });
+        logger.error({ type: 'Clash Update Error', body: error });
         res.status(500).json({
-          error: 'Something went wrong.please try again!',
+          error: 'Something went wrong. Please try again!',
           data: error,
         });
       }
@@ -189,6 +199,7 @@ router.post(
           expire_at: new Date(payload.expire_at),
         },
       });
+
       return res.json({ message: 'Clash created successfully!' });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -197,7 +208,7 @@ router.post(
       } else {
         logger.error({ type: 'Clash Post Error', body: error });
         res.status(500).json({
-          error: 'Something went wrong.please try again!',
+          error: 'Something went wrong. Please try again!',
           data: error,
         });
       }
@@ -268,11 +279,26 @@ router.post(
           .json({ error: 'Invalid ID parameter in request body' });
       }
 
-      if (!req.files || (req.files as Express.Multer.File[]).length < 2) {
-        return res
-          .status(422)
-          .json({ message: 'Please select at least 2 images for clashing.' });
+      // Verify ownership
+      const clash = await prisma.clash.findUnique({
+        select: { id: true, user_id: true },
+        where: { id: Number(id) },
+      });
+
+      if (!clash) {
+        return res.status(404).json({ message: 'Clash not found' });
       }
+
+      if (clash.user_id !== req.user?.id) {
+        return res.status(403).json({ message: 'Unauthorized' });
+      }
+
+      if (!req.files || (req.files as Express.Multer.File[]).length < 2) {
+        return res.status(422).json({
+          message: 'Please select at least 2 images for clashing.',
+        });
+      }
+
       const images = req.files as Express.Multer.File[];
       let imgErrors: string[] = [];
 
@@ -289,7 +315,6 @@ router.post(
 
       const uploadedImages: string[] = images.map((img) => img.filename.trim());
 
-      // Create clash items in database
       for (const imageName of uploadedImages) {
         await prisma.clashItem.create({
           data: {
@@ -301,12 +326,13 @@ router.post(
 
       return res.json({ message: 'Clash Items updated successfully!' });
     } catch (error) {
-      logger.error({ type: 'Clash Item', body: JSON.stringify(error) });
-      return res
-        .status(500)
-        .json({ message: 'Something went wrong.please try again' });
+      logger.error({ type: 'Clash Item Error', body: JSON.stringify(error) });
+      return res.status(500).json({
+        message: 'Something went wrong. Please try again',
+      });
     }
   }
 );
+
 
 export default router;
