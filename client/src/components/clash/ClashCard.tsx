@@ -52,6 +52,7 @@ export default function ClashCard({
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover"
               unoptimized={true}
+              loading="eager"
               onError={() => setImageError(true)}
               onLoad={() => console.log('Image loaded successfully:', imageUrl)}
             />

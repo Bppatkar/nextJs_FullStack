@@ -19,6 +19,8 @@
 //   matcher: ['/dashboard/:path*', '/clash/items/:path*'],
 // };
 
+
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
@@ -27,21 +29,22 @@ export async function proxy(request: NextRequest) {
   const token = await getToken({ req: request });
   const { pathname } = request.nextUrl;
 
-  console.log('Proxy running for:', pathname);
-  console.log('Token exists?', !!token);
-
   // Protected routes
   const protectedRoutes = ['/dashboard', '/clash/items'];
 
-  // Check if the route is protected
-  const isClashDetailPage = pathname.match(/^\/clash\/\d+$/); // /clash/1, /clash/2, etc
+  // ✅ Allow public access to clash detail pages like /clash/1, /clash/2, etc.
+  const isClashDetailPage = pathname.match(/^\/clash\/\d+$/);
+
+  // Only apply protection to routes that need it
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
 
   // Redirect to login if accessing protected route without token
-  if (!isClashDetailPage && protectedRoutes.some(route => 
-      pathname.startsWith(route)) && !token) {
+  if (isProtectedRoute && !token && !isClashDetailPage) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
-    console.log('Redirecting to login');
+    console.log('Redirecting to login for protected route:', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -51,10 +54,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  console.log('Allowing request');
+  console.log('Allowing request for:', pathname);
   return NextResponse.next();
 }
 
+// ✅ Only protect specific routes, NOT all /clash/*
 export const config = {
-  matcher: ['/dashboard/:path*', '/clash/:path*', '/login', '/register'],
+  matcher: ['/dashboard/:path*', '/clash/items/:path*', '/login', '/register'],
 };
